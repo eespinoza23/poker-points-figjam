@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+
+  <!-- Background -->
+  <rect width="128" height="128" rx="22" fill="#1E293B"/>
+
+  <!-- Card 3 — back (purple, rotated right) -->
+  <rect x="46" y="22" width="52" height="72" rx="8" fill="#533AB7"
+        transform="rotate(12 72 58)"/>
+
+  <!-- Card 2 — middle (amber, slight right tilt) -->
+  <rect x="38" y="20" width="52" height="72" rx="8" fill="#BA7517"
+        transform="rotate(4 64 56)"/>
+
+  <!-- Card 1 — front (white, straight) -->
+  <rect x="28" y="18" width="52" height="72" rx="8" fill="#F8F7F4"/>
+
+  <!-- Number on front card -->
+  <text x="54" y="72"
+    text-anchor="middle"
+    font-family="Georgia, 'Times New Roman', serif"
+    font-size="42" font-weight="900"
+    fill="#185FA5">5</text>
+
+  <!-- Small corner label top-left -->
+  <text x="36" y="36"
+    font-family="Georgia, serif"
+    font-size="12" font-weight="700"
+    fill="#185FA5">5</text>
+
+  <!-- Small corner label bottom-right (rotated 180) -->
+  <text x="72" y="84"
+    text-anchor="middle"
+    font-family="Georgia, serif"
+    font-size="12" font-weight="700"
+    fill="#185FA5"
+    transform="rotate(180 72 84)">5</text>
+
+  <!-- Dot indicator row at bottom -->
+  <circle cx="44" cy="108" r="5" fill="#185FA5"/>
+  <circle cx="58" cy="108" r="5" fill="#0F6E56"/>
+  <circle cx="72" cy="108" r="5" fill="#BA7517"/>
+  <circle cx="86" cy="108" r="5" fill="#533AB7"/>
+
+</svg>

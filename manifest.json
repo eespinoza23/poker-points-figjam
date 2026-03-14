@@ -1,0 +1,8 @@
+{
+  "name": "Poker Points",
+  "id": "poker-estimation-plugin",
+  "api": "1.0.0",
+  "main": "code.js",
+  "ui": "ui.html",
+  "editorType": ["figjam"]
+}

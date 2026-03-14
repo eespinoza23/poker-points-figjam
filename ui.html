@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: Inter, -apple-system, sans-serif;
+    background: #fff;
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .top-row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .tabs {
+    display: flex;
+    gap: 3px;
+    flex: 1;
+  }
+  .tab {
+    flex: 1;
+    padding: 3px 0;
+    border: 1px solid #D3D1C7;
+    border-radius: 5px;
+    background: #F8F7F4;
+    font-size: 10px;
+    font-weight: 600;
+    color: #5F5E5A;
+    cursor: pointer;
+    transition: all 0.1s;
+  }
+  .tab:hover { background: #EEECEA; }
+  .tab.active { background: #185FA5; border-color: #185FA5; color: #fff; }
+  .edit-btn {
+    padding: 3px 7px;
+    border: 1px solid #D3D1C7;
+    border-radius: 5px;
+    background: #F8F7F4;
+    font-size: 10px;
+    font-weight: 600;
+    color: #5F5E5A;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .edit-btn:hover { background: #EEECEA; }
+  .edit-btn.active { background: #F59E0B; border-color: #F59E0B; color: #fff; }
+
+  /* Normal card view */
+  .cards {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 6px;
+  }
+  .card {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    border: none;
+    cursor: grab;
+    font-size: 12px;
+    font-weight: 700;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.1s;
+    user-select: none;
+  }
+  .card:hover { transform: scale(1.1); }
+  .card:active { cursor: grabbing; transform: scale(0.95); }
+  .card.dragging { opacity: 0.4; }
+
+  /* Edit view */
+  .edit-cards {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+  .edit-chip {
+    display: flex;
+    align-items: center;
+    height: 28px;
+    border-radius: 6px;
+    overflow: hidden;
+    border: 2px solid transparent;
+  }
+  .edit-chip input {
+    width: 28px;
+    height: 100%;
+    border: none;
+    background: transparent;
+    font-size: 11px;
+    font-weight: 700;
+    color: #fff;
+    text-align: center;
+    outline: none;
+    padding: 0 2px;
+  }
+  .edit-chip .remove {
+    width: 14px;
+    height: 100%;
+    background: rgba(0,0,0,0.25);
+    border: none;
+    color: #fff;
+    font-size: 10px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+  }
+  .edit-chip .remove:hover { background: rgba(0,0,0,0.4); }
+  .add-btn {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    border: 2px dashed #D3D1C7;
+    background: #F8F7F4;
+    font-size: 16px;
+    color: #B4B2A9;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .add-btn:hover { border-color: #185FA5; color: #185FA5; }
+
+  .hint {
+    font-size: 9px;
+    color: #B4B2A9;
+    margin-top: 6px;
+  }
+  .hint.active { color: #185FA5; font-weight: 600; }
+  .summary {
+    background: #EFF6FF;
+    border-radius: 6px;
+    padding: 5px 8px;
+    font-size: 10px;
+    color: #185FA5;
+    display: flex;
+    gap: 8px;
+    margin-top: 6px;
+  }
+  .summary span { font-weight: 700; }
+</style>
+</head>
+<body>
+  <div id="content">
+    <div class="top-row">
+      <div class="tabs" id="tabs">
+        <button class="tab active" data-mode="fibonacci">Fibonacci</button>
+        <button class="tab" data-mode="modified">Modified</button>
+        <button class="tab" data-mode="tshirt">T-Shirt</button>
+      </div>
+      <button class="edit-btn" id="editBtn">✏ Edit</button>
+    </div>
+
+    <div class="cards" id="cards"></div>
+    <div class="edit-cards" id="editCards" style="display:none"></div>
+
+    <div class="hint" id="hint">Drag a value onto a sticky, or select stickies and click</div>
+    <div class="summary" id="summary" style="display:none"></div>
+  </div>
+
+<script>
+  const PALETTE = [
+    "#185FA5","#0F6E56","#3B6D11","#BA7517","#993C1D",
+    "#993556","#533AB7","#0EA5E9","#7C3AED","#BE185D",
+    "#6B7280","#1F2937"
+  ];
+  const QUESTION_COLOR = "#6B7280";
+
+  const DEFAULTS = {
+    fibonacci: ["1","2","3","5","8","13","21","?"],
+    modified:  ["0","½","1","2","3","5","8","13","20","40","100","?"],
+    tshirt:    ["XS","S","M","L","XL","XXL"]
+  };
+
+  let currentMode = "fibonacci";
+  let editMode = false;
+  let summaryVisible = false;
+  let modeValues = JSON.parse(JSON.stringify(DEFAULTS));
+
+  // Cards per row at 30px + 4px gap inside 304px content area = ~8 per row
+  const CARD_W = 34; // card + gap
+  const CONTENT_W = 304;
+
+  function calcHeight() {
+    const rows = editMode
+      ? Math.ceil((modeValues[currentMode].length + 1) / Math.floor(CONTENT_W / CARD_W))
+      : Math.ceil(modeValues[currentMode].length / Math.floor(CONTENT_W / CARD_W));
+    let h = 28;          // tabs row
+    h += 16;             // gap + margin-top
+    h += rows * CARD_W;  // card rows
+    h += 16;             // gap + margin-top
+    h += 14;             // hint
+    h += 16;             // body padding (8 top + 8 bottom)
+    if (summaryVisible) h += 12 + 26; // gap + summary
+    return h;
+  }
+
+  function sendResize() {
+    parent.postMessage({ pluginMessage: { type: "resize", height: calcHeight() } }, "*");
+  }
+
+  function colorFor(value, index) {
+    if (value === "?") return QUESTION_COLOR;
+    return PALETTE[index % PALETTE.length];
+  }
+
+  function fontSizeFor(value) {
+    if (value.length >= 3) return "9px";
+    if (value.length === 2) return "10px";
+    return "12px";
+  }
+
+  function renderCards() {
+    const container = document.getElementById("cards");
+    container.innerHTML = "";
+    const values = modeValues[currentMode];
+    values.forEach((v, i) => {
+      const color = colorFor(v, i);
+      const btn = document.createElement("button");
+      btn.className = "card";
+      btn.textContent = v;
+      btn.style.background = color;
+      btn.style.fontSize = fontSizeFor(v);
+      btn.draggable = true;
+
+      btn.addEventListener("click", () => {
+        parent.postMessage({ pluginMessage: { type: "stamp", value: v, color } }, "*");
+      });
+      btn.addEventListener("dragstart", (e) => {
+        btn.classList.add("dragging");
+        e.dataTransfer.setData("text/plain", JSON.stringify({ value: v, color }));
+        e.dataTransfer.effectAllowed = "copy";
+      });
+      btn.addEventListener("dragend", () => btn.classList.remove("dragging"));
+      container.appendChild(btn);
+    });
+  }
+
+  function renderEditCards() {
+    const container = document.getElementById("editCards");
+    container.innerHTML = "";
+    const values = modeValues[currentMode];
+
+    values.forEach((v, i) => {
+      const color = colorFor(v, i);
+      const chip = document.createElement("div");
+      chip.className = "edit-chip";
+      chip.style.background = color;
+
+      const input = document.createElement("input");
+      input.value = v;
+      input.maxLength = 4;
+      input.addEventListener("input", () => {
+        values[i] = input.value;
+        chip.style.background = colorFor(input.value, i);
+      });
+      input.addEventListener("change", saveValues);
+
+      const removeBtn = document.createElement("button");
+      removeBtn.className = "remove";
+      removeBtn.textContent = "×";
+      removeBtn.addEventListener("click", () => {
+        values.splice(i, 1);
+        renderEditCards();
+        saveValues();
+      });
+
+      chip.appendChild(input);
+      chip.appendChild(removeBtn);
+      container.appendChild(chip);
+    });
+
+    // Add button
+    const addBtn = document.createElement("button");
+    addBtn.className = "add-btn";
+    addBtn.textContent = "+";
+    addBtn.addEventListener("click", () => {
+      values.push("");
+      renderEditCards();
+      // Focus the last input
+      const inputs = container.querySelectorAll("input");
+      inputs[inputs.length - 1].focus();
+    });
+    container.appendChild(addBtn);
+  }
+
+  function saveValues() {
+    parent.postMessage({ pluginMessage: { type: "saveValues", values: modeValues } }, "*");
+  }
+
+  function setEditMode(on) {
+    editMode = on;
+    document.getElementById("editBtn").classList.toggle("active", on);
+    document.getElementById("editBtn").textContent = on ? "✓ Done" : "✏ Edit";
+    document.getElementById("cards").style.display = on ? "none" : "flex";
+    document.getElementById("editCards").style.display = on ? "flex" : "none";
+    if (on) renderEditCards();
+    else { saveValues(); renderCards(); }
+    sendResize();
+  }
+
+  document.getElementById("editBtn").addEventListener("click", () => setEditMode(!editMode));
+
+  document.getElementById("tabs").addEventListener("click", (e) => {
+    const tab = e.target.closest(".tab");
+    if (!tab) return;
+    if (editMode) setEditMode(false);
+    currentMode = tab.dataset.mode;
+    document.querySelectorAll(".tab").forEach(t => t.classList.toggle("active", t === tab));
+    renderCards();
+    sendResize();
+  });
+
+  window.onmessage = (event) => {
+    const msg = event.data.pluginMessage;
+    if (!msg) return;
+    if (msg.type === "selection") {
+      const hint = document.getElementById("hint");
+      const summary = document.getElementById("summary");
+      const count = msg.count;
+      const estimates = msg.estimates || [];
+
+      if (count > 0) {
+        hint.textContent = `${count} sticky${count > 1 ? "s" : ""} selected — click a value`;
+        hint.className = "hint active";
+      } else {
+        hint.textContent = "Drag a value onto a sticky, or select stickies and click";
+        hint.className = "hint";
+      }
+
+      // Show summary only for numeric modes with 2+ estimated stickies
+      if (estimates.length >= 2 && currentMode !== "tshirt") {
+        const total = estimates.reduce((a, b) => a + b, 0);
+        const avg = (total / estimates.length).toFixed(1);
+        summary.style.display = "flex";
+        summary.innerHTML =
+          `${estimates.length} estimated &nbsp;|&nbsp; Total: <span>${total}</span> &nbsp;|&nbsp; Avg: <span>${avg}</span>`;
+        summaryVisible = true;
+      } else {
+        summary.style.display = "none";
+        summaryVisible = false;
+      }
+      sendResize();
+    }
+    if (msg.type === "loadValues") {
+      modeValues = msg.values;
+      renderCards();
+      sendResize();
+    }
+  };
+
+  renderCards();
+  sendResize();
+  // Tell plugin the UI is ready so it can send saved values
+  parent.postMessage({ pluginMessage: { type: "ready" } }, "*");
+</script>
+</body>
+</html>
