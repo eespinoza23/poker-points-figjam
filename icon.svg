@@ -1,44 +1,57 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <defs>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="3" stdDeviation="4" flood-color="#1E293B" flood-opacity="0.22"/>
+    </filter>
+  </defs>
 
-  <!-- Background -->
-  <rect width="128" height="128" rx="22" fill="#1E293B"/>
+  <!-- Banana yellow background -->
+  <rect width="128" height="128" rx="24" fill="#FFE135"/>
 
-  <!-- Card 3 — back (purple, rotated right) -->
-  <rect x="46" y="22" width="52" height="72" rx="8" fill="#533AB7"
-        transform="rotate(12 72 58)"/>
+  <!-- Subtle radial shine -->
+  <radialGradient id="shine" cx="38%" cy="32%" r="55%">
+    <stop offset="0%" stop-color="#fff" stop-opacity="0.20"/>
+    <stop offset="100%" stop-color="#fff" stop-opacity="0"/>
+  </radialGradient>
+  <rect width="128" height="128" rx="24" fill="url(#shine)"/>
 
-  <!-- Card 2 — middle (amber, slight right tilt) -->
-  <rect x="38" y="20" width="52" height="72" rx="8" fill="#BA7517"
-        transform="rotate(4 64 56)"/>
+  <!-- Card shadow layer -->
+  <rect x="30" y="20" width="68" height="88" rx="10" fill="#1E293B" opacity="0.18"
+        transform="rotate(-7 64 64) translate(2 4)"/>
 
-  <!-- Card 1 — front (white, straight) -->
-  <rect x="28" y="18" width="52" height="72" rx="8" fill="#F8F7F4"/>
+  <!-- Playing card -->
+  <g transform="rotate(-7 64 64)">
+    <rect x="30" y="20" width="68" height="88" rx="10" fill="#ffffff"/>
 
-  <!-- Number on front card -->
-  <text x="54" y="72"
-    text-anchor="middle"
-    font-family="Georgia, 'Times New Roman', serif"
-    font-size="42" font-weight="900"
-    fill="#185FA5">5</text>
+    <!-- Top-left corner: 5 -->
+    <text x="42" y="43"
+      font-family="Georgia, 'Times New Roman', serif"
+      font-size="17" font-weight="700"
+      fill="#1E293B">5</text>
 
-  <!-- Small corner label top-left -->
-  <text x="36" y="36"
-    font-family="Georgia, serif"
-    font-size="12" font-weight="700"
-    fill="#185FA5">5</text>
+    <!-- Top-left corner: suit -->
+    <text x="43" y="57"
+      font-family="Georgia, serif"
+      font-size="13"
+      fill="#1E293B">♠</text>
 
-  <!-- Small corner label bottom-right (rotated 180) -->
-  <text x="72" y="84"
-    text-anchor="middle"
-    font-family="Georgia, serif"
-    font-size="12" font-weight="700"
-    fill="#185FA5"
-    transform="rotate(180 72 84)">5</text>
+    <!-- Center large 5 -->
+    <text x="64" y="83"
+      text-anchor="middle"
+      font-family="Georgia, 'Times New Roman', serif"
+      font-size="46" font-weight="900"
+      fill="#1E293B">5</text>
 
-  <!-- Dot indicator row at bottom -->
-  <circle cx="44" cy="108" r="5" fill="#185FA5"/>
-  <circle cx="58" cy="108" r="5" fill="#0F6E56"/>
-  <circle cx="72" cy="108" r="5" fill="#BA7517"/>
-  <circle cx="86" cy="108" r="5" fill="#533AB7"/>
-
+    <!-- Bottom-right corner (rotated 180 around card center) -->
+    <g transform="rotate(180 64 64)">
+      <text x="42" y="43"
+        font-family="Georgia, 'Times New Roman', serif"
+        font-size="17" font-weight="700"
+        fill="#1E293B">5</text>
+      <text x="43" y="57"
+        font-family="Georgia, serif"
+        font-size="13"
+        fill="#1E293B">♠</text>
+    </g>
+  </g>
 </svg>
