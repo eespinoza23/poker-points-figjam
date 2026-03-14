@@ -91,6 +91,12 @@ figma.on("selectionchange", sendSelection);
 async function attachBadge(sticky, value, colorHex) {
   await figma.loadFontAsync({ family: "Inter", style: "Bold" });
 
+  // If sticky is inside a group (already estimated), ungroup first so the
+  // old badge surfaces to page level and can be found and removed
+  if (sticky.parent && sticky.parent.type === "GROUP") {
+    figma.ungroup(sticky.parent);
+  }
+
   var badgeName = BADGE_PREFIX + sticky.id;
   [...figma.currentPage.children]
     .filter(function(n) { return n.name === badgeName; })
@@ -137,7 +143,16 @@ figma.ui.onmessage = async (msg) => {
   }
 
   if (msg.type === "stamp") {
-    const stickies = figma.currentPage.selection.filter(function(n) { return n.type === "STICKY"; });
+    const stickies = [];
+    figma.currentPage.selection.forEach(function(n) {
+      if (n.type === "STICKY") {
+        stickies.push(n);
+      } else if (n.type === "GROUP") {
+        for (var j = 0; j < n.children.length; j++) {
+          if (n.children[j].type === "STICKY") { stickies.push(n.children[j]); break; }
+        }
+      }
+    });
     for (var i = 0; i < stickies.length; i++) {
       await attachBadge(stickies[i], msg.value, msg.color);
     }
@@ -163,7 +178,7 @@ figma.on("drop", async (event) => {
   if (!value || !color) return false;
 
   let target = event.node;
-  while (target && target.type !== "STICKY") {
+  while (target && target.type !== "STICKY" && target.type !== "PAGE") {
     target = target.parent;
   }
   if (!target || target.type !== "STICKY") return false;

@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Privacy Policy — Poker Points</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #f9f9f8;
+      color: #1a1a1a;
+      padding: 48px 24px;
+    }
+    .wrap {
+      max-width: 680px;
+      margin: 0 auto;
+      background: #fff;
+      border-radius: 12px;
+      padding: 48px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: #EFF6FF;
+      color: #185FA5;
+      font-size: 13px;
+      font-weight: 600;
+      padding: 6px 12px;
+      border-radius: 20px;
+      margin-bottom: 24px;
+    }
+    .badge .dot {
+      width: 8px; height: 8px;
+      background: #185FA5;
+      border-radius: 50%;
+    }
+    h1 {
+      font-size: 28px;
+      font-weight: 700;
+      color: #1a1a1a;
+      margin-bottom: 8px;
+    }
+    .subtitle {
+      font-size: 15px;
+      color: #6b7280;
+      margin-bottom: 40px;
+    }
+    h2 {
+      font-size: 16px;
+      font-weight: 700;
+      color: #1a1a1a;
+      margin-top: 36px;
+      margin-bottom: 10px;
+    }
+    p, li {
+      font-size: 15px;
+      line-height: 1.7;
+      color: #374151;
+    }
+    ul {
+      padding-left: 20px;
+      margin-top: 8px;
+    }
+    li { margin-bottom: 4px; }
+    .summary-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 24px;
+      margin-bottom: 8px;
+    }
+    .summary-card {
+      border-radius: 8px;
+      padding: 16px;
+      font-size: 14px;
+    }
+    .summary-card.green {
+      background: #F0FDF4;
+      border: 1px solid #BBF7D0;
+    }
+    .summary-card.green .label { color: #166534; font-weight: 700; margin-bottom: 4px; }
+    .summary-card.green .value { color: #15803D; }
+    .summary-card.blue {
+      background: #EFF6FF;
+      border: 1px solid #BFDBFE;
+    }
+    .summary-card.blue .label { color: #1e40af; font-weight: 700; margin-bottom: 4px; }
+    .summary-card.blue .value { color: #1D4ED8; }
+    .divider {
+      border: none;
+      border-top: 1px solid #e5e7eb;
+      margin: 36px 0;
+    }
+    .footer {
+      font-size: 13px;
+      color: #9ca3af;
+      margin-top: 40px;
+    }
+    a { color: #185FA5; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="badge"><span class="dot"></span>Privacy Policy</div>
+    <h1>Poker Points</h1>
+    <p class="subtitle">A FigJam plugin for agile story point estimation &mdash; Last updated: March 2026</p>
+
+    <div class="summary-grid">
+      <div class="summary-card green">
+        <div class="label">No data collected</div>
+        <div class="value">We collect zero personal or usage data</div>
+      </div>
+      <div class="summary-card green">
+        <div class="label">No network requests</div>
+        <div class="value">The plugin never contacts any external server</div>
+      </div>
+      <div class="summary-card blue">
+        <div class="label">Local storage only</div>
+        <div class="value">Custom values stored in Figma's sandboxed client storage</div>
+      </div>
+      <div class="summary-card blue">
+        <div class="label">No third-party code</div>
+        <div class="value">No analytics, trackers, or external scripts</div>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <h2>1. Overview</h2>
+    <p>Poker Points is a FigJam plugin that helps agile teams assign story point estimates to stickies directly on the canvas. This policy explains what data the plugin accesses, what it stores, and what it does not do.</p>
+
+    <h2>2. Data We Do Not Collect</h2>
+    <p>Poker Points does not collect, transmit, or store:</p>
+    <ul>
+      <li>Your name, email address, or any account information</li>
+      <li>The content of your FigJam boards, stickies, or files</li>
+      <li>Usage data, analytics, or telemetry</li>
+      <li>Device identifiers or IP addresses</li>
+      <li>Any information identifying your organisation or team</li>
+    </ul>
+
+    <h2>3. What the Plugin Reads from Your Canvas</h2>
+    <p>When running, the plugin reads only:</p>
+    <ul>
+      <li>The position and size of selected sticky nodes (x, y, width, height) — to place the estimate badge correctly</li>
+      <li>The text value of existing estimate badges — to compute totals and averages in the summary bar</li>
+    </ul>
+    <p>This data is processed entirely within the Figma plugin sandbox and is never transmitted anywhere.</p>
+
+    <h2>4. Local Storage</h2>
+    <p>The plugin uses <strong>Figma's built-in <code>clientStorage</code> API</strong> to remember any custom estimation values you configure (e.g. a modified Fibonacci sequence). This data:</p>
+    <ul>
+      <li>Never leaves Figma's environment</li>
+      <li>Is scoped exclusively to this plugin</li>
+      <li>Contains only the estimation scale values you have typed in (e.g. "1, 2, 3, 5, 8")</li>
+      <li>Can be cleared at any time by resetting your custom values</li>
+    </ul>
+
+    <h2>5. Network Access</h2>
+    <p>Poker Points makes <strong>no network requests</strong>. The plugin manifest explicitly declares an empty allowed-domains list (<code>"allowedDomains": []</code>), meaning it is technically incapable of contacting any external server.</p>
+
+    <h2>6. Third-Party Services</h2>
+    <p>The plugin includes no third-party libraries, analytics SDKs, advertising code, or external scripts of any kind. All code runs locally within Figma.</p>
+
+    <h2>7. Children's Privacy</h2>
+    <p>Since the plugin collects no personal data from anyone, it inherently complies with COPPA and similar regulations regarding minors.</p>
+
+    <h2>8. GDPR &amp; CCPA</h2>
+    <p>Because no personal data is collected or processed, Poker Points has no data controller or processor obligations under GDPR (EU) or CCPA (California). There is no personal data to access, correct, or delete.</p>
+
+    <h2>9. Changes to This Policy</h2>
+    <p>If a future version of the plugin introduces any data collection (e.g. optional cloud sync), this policy will be updated before release and the change will be clearly communicated in the plugin's release notes.</p>
+
+    <h2>10. Contact</h2>
+    <p>If you have questions about this policy or the plugin's behaviour, please open an issue on the plugin's GitHub repository or contact the developer directly through the Figma Community listing.</p>
+
+    <hr class="divider">
+
+    <p class="footer">Poker Points is published on the Figma Community. This policy applies to the plugin only and not to Figma's own platform &mdash; see <a href="https://www.figma.com/privacy" target="_blank">figma.com/privacy</a> for Figma's privacy practices.</p>
+  </div>
+</body>
+</html>
