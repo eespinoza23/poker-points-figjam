@@ -1,6 +1,10 @@
 {
-  "name": "story-points-widget",
+  "name": "poker-points-figjam",
   "version": "1.0.0",
+  "description": "FigJam plugin for agile story point estimation",
+  "author": "Ernesto Espinoza <eespinoza23>",
+  "license": "MIT",
+  "homepage": "https://github.com/eespinoza23/poker-points-figjam",
   "scripts": {
     "build": "webpack --mode=production",
     "watch": "webpack --mode=development --watch"

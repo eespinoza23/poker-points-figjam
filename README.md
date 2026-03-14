@@ -48,3 +48,11 @@ All schemes are **fully editable** — add, remove, or change values and they pe
 ## Tags
 
 `#agile` `#estimation` `#planning` `#poker` `#scrum` `#figjam` `#storypoints` `#SAFe`
+
+---
+
+## Author
+
+Built by **Ernesto Espinoza** — [github.com/eespinoza23](https://github.com/eespinoza23)
+
+Privacy policy: [eespinoza23.github.io/poker-points-figjam/privacy-policy.html](https://eespinoza23.github.io/poker-points-figjam/privacy-policy.html)
