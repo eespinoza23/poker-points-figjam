@@ -6,6 +6,6 @@
   "ui": "ui.html",
   "editorType": ["figjam"],
   "networkAccess": {
-    "allowedDomains": []
+    "allowedDomains": ["none"]
   }
 }
