@@ -55,4 +55,6 @@ All schemes are **fully editable** — add, remove, or change values and they pe
 
 Built by **Edison Espinoza** — [github.com/eespinoza23](https://github.com/eespinoza23)
 
+For support or questions: [eespinoza23@pm.me](mailto:eespinoza23@pm.me)
+
 Privacy policy: [eespinoza23.github.io/poker-points-figjam/privacy-policy.html](https://eespinoza23.github.io/poker-points-figjam/privacy-policy.html)
