@@ -5,6 +5,7 @@
   "main": "code.js",
   "ui": "ui.html",
   "editorType": ["figjam"],
+  "icon": "icon.png",
   "documentAccess": "dynamic-page",
   "networkAccess": {
     "allowedDomains": ["none"]
