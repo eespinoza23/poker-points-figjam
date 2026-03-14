@@ -53,6 +53,6 @@ All schemes are **fully editable** — add, remove, or change values and they pe
 
 ## Author
 
-Built by **Ernesto Espinoza** — [github.com/eespinoza23](https://github.com/eespinoza23)
+Built by **Edison Espinoza** — [github.com/eespinoza23](https://github.com/eespinoza23)
 
 Privacy policy: [eespinoza23.github.io/poker-points-figjam/privacy-policy.html](https://eespinoza23.github.io/poker-points-figjam/privacy-policy.html)
