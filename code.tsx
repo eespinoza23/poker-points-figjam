@@ -75,7 +75,7 @@ function Widget() {
     return new Promise<void>(resolve => {
       figma.showUI(__html__, { width: 340, height: 108, title: 'Set Story' });
       figma.ui.postMessage({ type: 'init', story });
-      figma.ui.once('message', (msg: { type: string; story?: string }) => {
+      figma.ui.on('message', (msg: { type: string; story?: string }) => {
         if (msg.type === 'set-story' && msg.story !== undefined) {
           setStory(msg.story);
         }
