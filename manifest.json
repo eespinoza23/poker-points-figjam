@@ -6,5 +6,6 @@
   "main": "code.js",
   "ui": "ui.html",
   "editorType": ["figjam"],
-  "containsWidget": true
+  "containsWidget": true,
+  "permissions": ["currentuser"]
 }
