@@ -367,10 +367,15 @@
     sendResize();
   });
 
-  // Story-input mode (called by widget via figma.showUI)
+  // Widget modes
   document.getElementById("storySubmit").addEventListener("click", () => {
     const val = document.getElementById("storyInput").value;
-    parent.postMessage({ pluginMessage: { type: "set-story", story: val } }, "*");
+    const action = document.getElementById("storySubmit").dataset.action;
+    if (action === "start-session") {
+      parent.postMessage({ pluginMessage: { type: "start-session", story: val } }, "*");
+    } else {
+      parent.postMessage({ pluginMessage: { type: "set-story", story: val } }, "*");
+    }
   });
   document.getElementById("storyInput").addEventListener("keydown", (e) => {
     if (e.key === "Enter") document.getElementById("storySubmit").click();
@@ -379,8 +384,7 @@
   window.onmessage = (event) => {
     const msg = event.data.pluginMessage;
     if (!msg) return;
-    if (msg.type === "init") {
-      // Widget story-input mode: hide legacy UI, show story form
+    if (msg.type === "init" || msg.type === "init-start") {
       document.getElementById("content").style.display = "none";
       const form = document.getElementById("storyForm");
       form.style.display = "flex";
@@ -388,7 +392,15 @@
       input.value = msg.story || "";
       input.focus();
       input.select();
-      parent.postMessage({ pluginMessage: { type: "resize", height: 108 } }, "*");
+      if (msg.type === "init-start") {
+        document.getElementById("storySubmit").textContent = "▶  Start Vote";
+        document.getElementById("storySubmit").dataset.action = "start-session";
+        parent.postMessage({ pluginMessage: { type: "resize", height: 148 } }, "*");
+      } else {
+        document.getElementById("storySubmit").textContent = "Set Story";
+        document.getElementById("storySubmit").dataset.action = "set-story";
+        parent.postMessage({ pluginMessage: { type: "resize", height: 108 } }, "*");
+      }
       return;
     }
     if (msg.type === "selection") {

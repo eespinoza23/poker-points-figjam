@@ -59,40 +59,31 @@ function Widget() {
           PLANNING POKER
         </Text>
 
-        {/* Story label — tap to edit */}
-        <AutoLayout
-          fill="#F8F7F4" stroke="#E0DDD6" strokeWidth={1}
-          cornerRadius={8} padding={{ vertical: 8, horizontal: 10 }}
-          width="fill-parent" verticalAlignItems="center"
-          onClick={(): Promise<void> => new Promise(resolve => {
-            figma.showUI(__html__, { width: 340, height: 108, title: 'Set Story' });
-            figma.ui.postMessage({ type: 'init', story });
-            figma.ui.on('message', (msg: { type: string; story?: string }) => {
-              if (msg.type === 'set-story') {
-                if (msg.story !== undefined) setStory(msg.story);
-                resolve();
-              }
-            });
-          })}
-        >
-          <Text fontSize={13} fill={story.trim() ? '#1A1A1A' : '#B4B2A9'} width="fill-parent">
-            {story.trim() || '✏  Tap to set story…'}
-          </Text>
-        </AutoLayout>
-
-        {/* Start Session */}
+        {/* Start Session — opens UI where story is set + session starts */}
         <AutoLayout
           fill="#185FA5" cornerRadius={8}
           padding={{ vertical: 9, horizontal: 0 }}
           horizontalAlignItems="center" width="fill-parent"
           onClick={(): Promise<void> => new Promise(resolve => {
-            for (const k of votes.keys()) votes.delete(k);
-            setFacilitatorId(String(figma.currentUser?.sessionId ?? 0));
-            setPhase('voting');
-            resolve();
+            figma.showUI(__html__, { width: 340, height: 148, title: 'Start Session' });
+            figma.ui.postMessage({ type: 'init-start', story });
+            figma.ui.on('message', (msg: any) => {
+              if (msg.type === 'start-session') {
+                if (msg.story !== undefined) setStory(msg.story);
+                for (const k of votes.keys()) votes.delete(k);
+                setFacilitatorId(String(figma.currentUser?.sessionId ?? 0));
+                setPhase('voting');
+                resolve();
+              }
+              if (msg.type === 'cancel') {
+                resolve();
+              }
+            });
           })}
         >
-          <Text fill="#FFFFFF" fontSize={13} fontWeight="bold">▶  Start Session</Text>
+          <Text fill="#FFFFFF" fontSize={13} fontWeight="bold">
+            {story.trim() ? `▶  Start: ${story}` : '▶  Start Session'}
+          </Text>
         </AutoLayout>
       </AutoLayout>
     );
