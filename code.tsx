@@ -79,8 +79,7 @@ function Widget() {
         if (msg.type === 'set-story' && msg.story !== undefined) {
           setStory(msg.story);
         }
-        figma.closePlugin();
-        resolve();
+        resolve(); // resolving the Promise closes the UI automatically in widgets
       });
     });
   }
