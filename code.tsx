@@ -34,20 +34,6 @@ function isDisagreement(votes: VoteEntry[]): boolean {
   return Math.max(...idxs) - Math.min(...idxs) >= 2;
 }
 
-function stampSelected(val: string): Promise<void> {
-  return new Promise<void>(resolve => {
-    figma.currentPage.selection
-      .filter(n => n.type === 'STICKY' || n.type === 'SHAPE_WITH_TEXT')
-      .forEach(n => {
-        const t = n.type === 'STICKY'
-          ? (n as StickyNode).text
-          : (n as ShapeWithTextNode).text;
-        t.characters = `[${val}] ${t.characters.replace(/^\[\S+\]\s*/, '')}`.trimEnd();
-      });
-    resolve();
-  });
-}
-
 // ── WIDGET ────────────────────────────────────────────────────────────────────
 function Widget() {
   const [phase, setPhase]                 = useSyncedState<Phase>('phase', 'idle');
@@ -55,10 +41,8 @@ function Widget() {
   const [facilitatorId, setFacilitatorId] = useSyncedState<string>('facilitatorId', '');
   const votes = useSyncedMap<VoteEntry>('votes');
 
-  const me     = figma.currentUser;
-  const userId = String(me?.sessionId ?? 0);
-  const myVote = votes.get(userId);
-  const isFacilitator = userId === facilitatorId;
+  // NOTE: figma.currentUser cannot be used during rendering —
+  // it is only available inside onClick event handlers.
 
   const allVotes     = [...votes.entries()].map(([id, v]) => ({ id, ...v }));
   const voteCount    = allVotes.length;
@@ -70,7 +54,6 @@ function Widget() {
     for (const k of votes.keys()) votes.delete(k);
   }
 
-  // Open a small UI panel for the facilitator to type the story label
   function openStoryInput(): Promise<void> {
     return new Promise<void>(resolve => {
       figma.showUI(__html__, { width: 340, height: 108, title: 'Set Story' });
@@ -79,8 +62,22 @@ function Widget() {
         if (msg.type === 'set-story' && msg.story !== undefined) {
           setStory(msg.story);
         }
-        resolve(); // resolving the Promise closes the UI automatically in widgets
+        resolve();
       });
+    });
+  }
+
+  function stampSelected(val: string): Promise<void> {
+    return new Promise<void>(resolve => {
+      figma.currentPage.selection
+        .filter(n => n.type === 'STICKY' || n.type === 'SHAPE_WITH_TEXT')
+        .forEach(n => {
+          const t = n.type === 'STICKY'
+            ? (n as StickyNode).text
+            : (n as ShapeWithTextNode).text;
+          t.characters = `[${val}] ${t.characters.replace(/^\[\S+\]\s*/, '')}`.trimEnd();
+        });
+      resolve();
     });
   }
 
@@ -96,18 +93,13 @@ function Widget() {
           PLANNING POKER
         </Text>
 
-        {/* Story label — tap to edit */}
         <AutoLayout
           fill="#F8F7F4" stroke="#E0DDD6" strokeWidth={1}
           cornerRadius={8} padding={{ vertical: 8, horizontal: 10 }}
           width="fill-parent" verticalAlignItems="center"
           onClick={openStoryInput}
         >
-          <Text
-            fontSize={13}
-            fill={story.trim() ? '#1A1A1A' : '#B4B2A9'}
-            width="fill-parent"
-          >
+          <Text fontSize={13} fill={story.trim() ? '#1A1A1A' : '#B4B2A9'} width="fill-parent">
             {story.trim() || '✏  Tap to set story…'}
           </Text>
         </AutoLayout>
@@ -118,9 +110,11 @@ function Widget() {
           padding={{ vertical: 9, horizontal: 0 }}
           horizontalAlignItems="center" width="fill-parent"
           onClick={() => {
-            if (!story.trim() || !me) return;
+            if (!story.trim()) return;
+            const me = figma.currentUser; // safe: inside onClick
+            if (!me) return;
             clearVotes();
-            setFacilitatorId(userId);
+            setFacilitatorId(String(me.sessionId));
             setPhase('voting');
           }}
         >
@@ -138,7 +132,6 @@ function Widget() {
         cornerRadius={12} fill="#FFFFFF" stroke="#E0DDD6" strokeWidth={1}
         width={290}
       >
-        {/* Header */}
         <AutoLayout direction="horizontal" spacing={8} verticalAlignItems="center" width="fill-parent">
           <Text fontSize={12} fill="#1A1A1A" fontWeight="bold" width="fill-parent">
             {story}
@@ -148,63 +141,43 @@ function Widget() {
           </Text>
         </AutoLayout>
 
-        {/* My vote status */}
-        {myVote ? (
-          <AutoLayout
-            fill="#EFF6FF" cornerRadius={6}
-            padding={{ vertical: 5, horizontal: 8 }}
-            direction="horizontal" spacing={6} verticalAlignItems="center"
-          >
-            <Text fontSize={11} fill="#185FA5">✓  You picked</Text>
-            <AutoLayout
-              fill={CARD_COLORS[myVote.value]?.bg ?? '#6B7280'}
-              cornerRadius={4} padding={{ vertical: 2, horizontal: 7 }}
-            >
-              <Text fontSize={11} fill="#FFFFFF" fontWeight="bold">{myVote.value}</Text>
-            </AutoLayout>
-            <Text fontSize={10} fill="#6B7280">(tap to change)</Text>
-          </AutoLayout>
-        ) : (
-          <Text fontSize={11} fill="#B4B2A9">Pick your estimate below</Text>
-        )}
+        <Text fontSize={11} fill="#B4B2A9">Pick your estimate — hidden until reveal</Text>
 
-        {/* Card grid — 7 × 32px + 6 × 5px gap = 254px fits in 266px content */}
         <AutoLayout direction="horizontal" spacing={5} width="fill-parent">
           {FIBONACCI.map(p => {
             const c = CARD_COLORS[p];
-            const selected = myVote?.value === p;
             return (
               <AutoLayout
                 key={p} width={32} height={38} cornerRadius={8}
-                fill={selected ? c.bg : '#F8F7F4'}
-                stroke={c.bg} strokeWidth={selected ? 0 : 1.5}
+                fill="#F8F7F4" stroke={c.bg} strokeWidth={1.5}
                 horizontalAlignItems="center" verticalAlignItems="center"
                 onClick={() => {
+                  const me = figma.currentUser; // safe: inside onClick
                   if (!me) return;
-                  votes.set(userId, { value: p, name: me.name });
+                  votes.set(String(me.sessionId), { value: p, name: me.name });
                 }}
               >
-                <Text fontSize={13} fontWeight="bold" fill={selected ? '#FFFFFF' : c.bg}>
-                  {p}
-                </Text>
+                <Text fontSize={13} fontWeight="bold" fill={c.bg}>{p}</Text>
               </AutoLayout>
             );
           })}
         </AutoLayout>
 
-        {/* Reveal — facilitator only */}
-        {isFacilitator && (
-          <AutoLayout
-            fill="#1F2937" cornerRadius={8}
-            padding={{ vertical: 9, horizontal: 0 }}
-            horizontalAlignItems="center" width="fill-parent"
-            onClick={() => setPhase('revealed')}
-          >
-            <Text fill="#FFFFFF" fontSize={13} fontWeight="bold">
-              Reveal  ({voteCount} voted)
-            </Text>
-          </AutoLayout>
-        )}
+        {/* Reveal — all users see it; only facilitator's click takes effect */}
+        <AutoLayout
+          fill="#1F2937" cornerRadius={8}
+          padding={{ vertical: 9, horizontal: 0 }}
+          horizontalAlignItems="center" width="fill-parent"
+          onClick={() => {
+            const me = figma.currentUser; // safe: inside onClick
+            if (String(me?.sessionId ?? 0) !== facilitatorId) return;
+            setPhase('revealed');
+          }}
+        >
+          <Text fill="#FFFFFF" fontSize={13} fontWeight="bold">
+            Reveal  ({voteCount} voted)
+          </Text>
+        </AutoLayout>
       </AutoLayout>
     );
   }
@@ -218,7 +191,6 @@ function Widget() {
       strokeWidth={disagreement ? 2 : 1}
       width={290}
     >
-      {/* Header */}
       <AutoLayout direction="horizontal" spacing={8} verticalAlignItems="center" width="fill-parent">
         <Text fontSize={12} fill="#1A1A1A" fontWeight="bold" width="fill-parent">
           {story}
@@ -228,7 +200,6 @@ function Widget() {
         )}
       </AutoLayout>
 
-      {/* All votes */}
       {allVotes.length > 0 ? (
         <AutoLayout direction="horizontal" spacing={8} width="fill-parent">
           {allVotes.map(({ id, value, name }) => {
@@ -252,55 +223,53 @@ function Widget() {
         <Text fontSize={11} fill="#B4B2A9">No votes recorded.</Text>
       )}
 
-      {/* Facilitator controls */}
-      {isFacilitator ? (
+      {uniqueValues.length > 0 && (
         <AutoLayout direction="vertical" spacing={6} width="fill-parent">
-          {uniqueValues.length > 0 && (
-            <AutoLayout direction="vertical" spacing={6} width="fill-parent">
-              <Text fontSize={10} fill="#888780">Accept final estimate:</Text>
-              <AutoLayout direction="horizontal" spacing={6}>
-                {uniqueValues.map(v => {
-                  const isSuggested = v === suggested;
-                  return (
-                    <AutoLayout
-                      key={v}
-                      fill={isSuggested ? '#185FA5' : '#F3F4F6'}
-                      stroke={isSuggested ? '#185FA5' : '#D1D5DB'}
-                      strokeWidth={1} cornerRadius={8}
-                      padding={{ vertical: 7, horizontal: 14 }}
-                      onClick={() => stampSelected(v).then(() => {
-                        clearVotes();
-                        setStory('');
-                        setPhase('idle');
-                      })}
-                    >
-                      <Text
-                        fontSize={13} fontWeight="bold"
-                        fill={isSuggested ? '#FFFFFF' : '#374151'}
-                      >
-                        {v} pts
-                      </Text>
-                    </AutoLayout>
-                  );
-                })}
-              </AutoLayout>
-            </AutoLayout>
-          )}
-
-          <AutoLayout
-            fill="#F3F4F6" stroke="#D1D5DB" strokeWidth={1} cornerRadius={8}
-            padding={{ vertical: 8, horizontal: 0 }}
-            horizontalAlignItems="center" width="fill-parent"
-            onClick={() => { clearVotes(); setStory(''); setPhase('idle'); }}
-          >
-            <Text fill="#374151" fontSize={12} fontWeight="bold">↺  New Round</Text>
+          <Text fontSize={10} fill="#888780">Accept final estimate:</Text>
+          <AutoLayout direction="horizontal" spacing={6}>
+            {uniqueValues.map(v => {
+              const isSuggested = v === suggested;
+              return (
+                <AutoLayout
+                  key={v}
+                  fill={isSuggested ? '#185FA5' : '#F3F4F6'}
+                  stroke={isSuggested ? '#185FA5' : '#D1D5DB'}
+                  strokeWidth={1} cornerRadius={8}
+                  padding={{ vertical: 7, horizontal: 14 }}
+                  onClick={(): Promise<void> => {
+                    const me = figma.currentUser; // safe: inside onClick
+                    if (String(me?.sessionId ?? 0) !== facilitatorId) return Promise.resolve();
+                    return stampSelected(v).then(() => {
+                      clearVotes();
+                      setStory('');
+                      setPhase('idle');
+                    });
+                  }}
+                >
+                  <Text fontSize={13} fontWeight="bold" fill={isSuggested ? '#FFFFFF' : '#374151'}>
+                    {v} pts
+                  </Text>
+                </AutoLayout>
+              );
+            })}
           </AutoLayout>
         </AutoLayout>
-      ) : (
-        <Text fontSize={11} fill="#B4B2A9" horizontalAlignText="center" width="fill-parent">
-          Waiting for facilitator to accept…
-        </Text>
       )}
+
+      <AutoLayout
+        fill="#F3F4F6" stroke="#D1D5DB" strokeWidth={1} cornerRadius={8}
+        padding={{ vertical: 8, horizontal: 0 }}
+        horizontalAlignItems="center" width="fill-parent"
+        onClick={() => {
+          const me = figma.currentUser; // safe: inside onClick
+          if (String(me?.sessionId ?? 0) !== facilitatorId) return;
+          clearVotes();
+          setStory('');
+          setPhase('idle');
+        }}
+      >
+        <Text fill="#374151" fontSize={12} fontWeight="bold">↺  New Round</Text>
+      </AutoLayout>
     </AutoLayout>
   );
 }
