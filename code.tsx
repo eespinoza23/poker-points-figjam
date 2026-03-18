@@ -106,13 +106,12 @@ function Widget() {
         </AutoLayout>
 
         <AutoLayout
-          fill={story.trim() ? '#185FA5' : '#D1D5DB'}
+          fill="#185FA5"
           cornerRadius={8}
           padding={{ vertical: 9, horizontal: 0 }}
           horizontalAlignItems="center" width="fill-parent"
           onClick={() => {
-            if (!story.trim()) return;
-            clearVotes();
+            for (const k of votes.keys()) votes.delete(k);
             setFacilitatorId(String(figma.currentUser?.sessionId ?? 0));
             setPhase('voting');
           }}
