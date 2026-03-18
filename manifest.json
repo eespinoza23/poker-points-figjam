@@ -7,5 +7,6 @@
   "ui": "ui.html",
   "editorType": ["figjam"],
   "containsWidget": true,
+  "documentAccess": "dynamic-page",
   "permissions": ["currentuser"]
 }
