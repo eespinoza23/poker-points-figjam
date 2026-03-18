@@ -148,9 +148,55 @@
     margin-top: 6px;
   }
   .summary span { font-weight: 700; }
+
+  /* Story-input mode (widget) */
+  #storyForm {
+    display: none;
+    flex-direction: column;
+    gap: 8px;
+    padding: 4px 0;
+  }
+  #storyForm label {
+    font-size: 10px;
+    font-weight: 600;
+    color: #5F5E5A;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+  }
+  #storyInput {
+    width: 100%;
+    padding: 7px 10px;
+    border: 1px solid #D3D1C7;
+    border-radius: 6px;
+    font-size: 13px;
+    font-family: inherit;
+    outline: none;
+    background: #F8F7F4;
+    color: #1A1A1A;
+  }
+  #storyInput:focus { border-color: #185FA5; background: #fff; }
+  #storySubmit {
+    padding: 8px 0;
+    border: none;
+    border-radius: 6px;
+    background: #185FA5;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 700;
+    font-family: inherit;
+    cursor: pointer;
+  }
+  #storySubmit:hover { background: #145087; }
 </style>
 </head>
 <body>
+  <!-- Story-input mode: shown when widget sends {type:'init'} -->
+  <div id="storyForm">
+    <label>Story</label>
+    <input id="storyInput" type="text" placeholder="e.g. User can reset password" maxlength="120" />
+    <button id="storySubmit">Set Story</button>
+  </div>
+
   <div id="content">
     <div class="top-row">
       <div class="tabs" id="tabs">
@@ -321,9 +367,30 @@
     sendResize();
   });
 
+  // Story-input mode (called by widget via figma.showUI)
+  document.getElementById("storySubmit").addEventListener("click", () => {
+    const val = document.getElementById("storyInput").value;
+    parent.postMessage({ pluginMessage: { type: "set-story", story: val } }, "*");
+  });
+  document.getElementById("storyInput").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") document.getElementById("storySubmit").click();
+  });
+
   window.onmessage = (event) => {
     const msg = event.data.pluginMessage;
     if (!msg) return;
+    if (msg.type === "init") {
+      // Widget story-input mode: hide legacy UI, show story form
+      document.getElementById("content").style.display = "none";
+      const form = document.getElementById("storyForm");
+      form.style.display = "flex";
+      const input = document.getElementById("storyInput");
+      input.value = msg.story || "";
+      input.focus();
+      input.select();
+      parent.postMessage({ pluginMessage: { type: "resize", height: 108 } }, "*");
+      return;
+    }
     if (msg.type === "selection") {
       const hint = document.getElementById("hint");
       const summary = document.getElementById("summary");

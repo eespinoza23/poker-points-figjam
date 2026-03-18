@@ -1,5 +1,5 @@
 const { widget } = figma;
-const { AutoLayout, Text, Input, useSyncedState, useSyncedMap } = widget;
+const { AutoLayout, Text, useSyncedState, useSyncedMap } = widget;
 
 // ── CONSTANTS ─────────────────────────────────────────────────────────────────
 const FIBONACCI = ['1', '2', '3', '5', '8', '13', '21'];
@@ -50,26 +50,39 @@ function stampSelected(val: string): Promise<void> {
 
 // ── WIDGET ────────────────────────────────────────────────────────────────────
 function Widget() {
-  const [phase, setPhase]                   = useSyncedState<Phase>('phase', 'idle');
-  const [story, setStory]                   = useSyncedState<string>('story', '');
-  const [facilitatorId, setFacilitatorId]   = useSyncedState<string>('facilitatorId', '');
+  const [phase, setPhase]                 = useSyncedState<Phase>('phase', 'idle');
+  const [story, setStory]                 = useSyncedState<string>('story', '');
+  const [facilitatorId, setFacilitatorId] = useSyncedState<string>('facilitatorId', '');
   const votes = useSyncedMap<VoteEntry>('votes');
 
-  // Current user — sessionId is always non-null (safe for anonymous users too)
   const me     = figma.currentUser;
   const userId = String(me?.sessionId ?? 0);
   const myVote = votes.get(userId);
   const isFacilitator = userId === facilitatorId;
 
-  // Derived vote data
-  const allVotes       = [...votes.entries()].map(([id, v]) => ({ id, ...v }));
-  const voteCount      = allVotes.length;
-  const suggested      = getMode(allVotes);
-  const disagreement   = isDisagreement(allVotes);
-  const uniqueValues   = [...new Set(allVotes.map(v => v.value))];
+  const allVotes     = [...votes.entries()].map(([id, v]) => ({ id, ...v }));
+  const voteCount    = allVotes.length;
+  const suggested    = getMode(allVotes);
+  const disagreement = isDisagreement(allVotes);
+  const uniqueValues = [...new Set(allVotes.map(v => v.value))];
 
   function clearVotes() {
     for (const k of votes.keys()) votes.delete(k);
+  }
+
+  // Open a small UI panel for the facilitator to type the story label
+  function openStoryInput(): Promise<void> {
+    return new Promise<void>(resolve => {
+      figma.showUI(__html__, { width: 340, height: 108, title: 'Set Story' });
+      figma.ui.postMessage({ type: 'init', story });
+      figma.ui.once('message', (msg: { type: string; story?: string }) => {
+        if (msg.type === 'set-story' && msg.story !== undefined) {
+          setStory(msg.story);
+        }
+        figma.closePlugin();
+        resolve();
+      });
+    });
   }
 
   // ── IDLE ───────────────────────────────────────────────────────────────────
@@ -84,13 +97,21 @@ function Widget() {
           PLANNING POKER
         </Text>
 
-        <Input
-          value={story}
-          placeholder="What are we estimating?"
-          onTextEditEnd={e => setStory(e.characters)}
-          fontSize={13} fill="#1A1A1A"
-          width={266}
-        />
+        {/* Story label — tap to edit */}
+        <AutoLayout
+          fill="#F8F7F4" stroke="#E0DDD6" strokeWidth={1}
+          cornerRadius={8} padding={{ vertical: 8, horizontal: 10 }}
+          width="fill-parent" verticalAlignItems="center"
+          onClick={openStoryInput}
+        >
+          <Text
+            fontSize={13}
+            fill={story.trim() ? '#1A1A1A' : '#B4B2A9'}
+            width="fill-parent"
+          >
+            {story.trim() || '✏  Tap to set story…'}
+          </Text>
+        </AutoLayout>
 
         <AutoLayout
           fill={story.trim() ? '#185FA5' : '#D1D5DB'}
@@ -118,15 +139,12 @@ function Widget() {
         cornerRadius={12} fill="#FFFFFF" stroke="#E0DDD6" strokeWidth={1}
         width={290}
       >
-        {/* Header: story + counter */}
+        {/* Header */}
         <AutoLayout direction="horizontal" spacing={8} verticalAlignItems="center" width="fill-parent">
           <Text fontSize={12} fill="#1A1A1A" fontWeight="bold" width="fill-parent">
             {story}
           </Text>
-          <Text
-            fontSize={11} fontWeight="bold"
-            fill={voteCount > 0 ? '#185FA5' : '#B4B2A9'}
-          >
+          <Text fontSize={11} fontWeight="bold" fill={voteCount > 0 ? '#185FA5' : '#B4B2A9'}>
             {voteCount} voted
           </Text>
         </AutoLayout>
@@ -151,7 +169,7 @@ function Widget() {
           <Text fontSize={11} fill="#B4B2A9">Pick your estimate below</Text>
         )}
 
-        {/* Card grid — 7 × 32px + 6 × 5px gap = 254px, fits in 266px content */}
+        {/* Card grid — 7 × 32px + 6 × 5px gap = 254px fits in 266px content */}
         <AutoLayout direction="horizontal" spacing={5} width="fill-parent">
           {FIBONACCI.map(p => {
             const c = CARD_COLORS[p];
@@ -175,7 +193,7 @@ function Widget() {
           })}
         </AutoLayout>
 
-        {/* Reveal button — facilitator only */}
+        {/* Reveal — facilitator only */}
         {isFacilitator && (
           <AutoLayout
             fill="#1F2937" cornerRadius={8}
@@ -219,8 +237,7 @@ function Widget() {
             return (
               <AutoLayout key={id} direction="vertical" spacing={4} horizontalAlignItems="center">
                 <AutoLayout
-                  width={40} height={40} cornerRadius={8}
-                  fill={c.bg}
+                  width={40} height={40} cornerRadius={8} fill={c.bg}
                   horizontalAlignItems="center" verticalAlignItems="center"
                 >
                   <Text fontSize={15} fontWeight="bold" fill={c.text}>{value}</Text>
@@ -275,11 +292,7 @@ function Widget() {
             fill="#F3F4F6" stroke="#D1D5DB" strokeWidth={1} cornerRadius={8}
             padding={{ vertical: 8, horizontal: 0 }}
             horizontalAlignItems="center" width="fill-parent"
-            onClick={() => {
-              clearVotes();
-              setStory('');
-              setPhase('idle');
-            }}
+            onClick={() => { clearVotes(); setStory(''); setPhase('idle'); }}
           >
             <Text fill="#374151" fontSize={12} fontWeight="bold">↺  New Round</Text>
           </AutoLayout>
