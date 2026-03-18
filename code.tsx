@@ -112,10 +112,8 @@ function Widget() {
           horizontalAlignItems="center" width="fill-parent"
           onClick={() => {
             if (!story.trim()) return;
-            const me = figma.currentUser; // safe: inside onClick
-            if (!me) return;
             clearVotes();
-            setFacilitatorId(String(me.sessionId));
+            setFacilitatorId(String(figma.currentUser?.sessionId ?? 0));
             setPhase('voting');
           }}
         >
