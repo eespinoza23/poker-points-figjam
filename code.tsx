@@ -59,10 +59,11 @@ function Widget() {
       figma.showUI(__html__, { width: 340, height: 108, title: 'Set Story' });
       figma.ui.postMessage({ type: 'init', story });
       figma.ui.on('message', (msg: { type: string; story?: string }) => {
-        if (msg.type === 'set-story' && msg.story !== undefined) {
-          setStory(msg.story);
+        if (msg.type === 'set-story') {
+          if (msg.story !== undefined) setStory(msg.story);
+          resolve(); // only close when the user submits
         }
-        resolve();
+        // ignore 'ready' and any other messages from ui.html boot
       });
     });
   }
