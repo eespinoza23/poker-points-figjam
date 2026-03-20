@@ -212,33 +212,50 @@ function Widget() {
                   stroke={isSuggested ? '#185FA5' : '#D1D5DB'}
                   strokeWidth={1} cornerRadius={8}
                   padding={{ vertical: 7, horizontal: 14 }}
-                  onClick={async (): Promise<void> => {
+                  onClick={(): Promise<void> => new Promise(resolve => {
                     const me = figma.currentUser;
                     const isAllowed = !facilitatorId || (me?.id ?? '') === facilitatorId;
-                    if (!isAllowed) return;
+                    if (!isAllowed) { resolve(); return; }
 
-                    // Find sticky: prefer stored node, fall back to current selection
-                    const storedNode = storyNodeId ? figma.getNodeById(storyNodeId) : null;
-                    const stickyNode =
-                      (storedNode && (storedNode.type === 'STICKY' || storedNode.type === 'SHAPE_WITH_TEXT'))
-                        ? storedNode
-                        : (figma.currentPage.selection.find(
-                            n => n.type === 'STICKY' || n.type === 'SHAPE_WITH_TEXT'
-                          ) ?? null);
+                    const nodeId = storyNodeId;
+                    const acceptValue = v;
 
-                    if (stickyNode) {
-                      const t = stickyNode.type === 'STICKY'
-                        ? (stickyNode as StickyNode).text
-                        : (stickyNode as ShapeWithTextNode).text;
-                      await figma.loadFontAsync(t.fontName as FontName);
-                      t.characters = `[${v}] ${t.characters.replace(/^\[\S+\]\s*/, '')}`.trimEnd();
-                    }
+                    // Open hidden UI to get a proper async plugin context for font loading + node editing
+                    figma.showUI(__html__, { visible: false });
+                    figma.ui.on('message', async (msg: any) => {
+                      if (msg.type !== 'ready') return;
 
-                    for (const k of votes.keys()) votes.delete(k);
-                    setStoryNodeId('');
-                    setStory('');
-                    setPhase('idle');
-                  }}
+                      const stored = nodeId ? figma.getNodeById(nodeId) : null;
+                      const stickyNode =
+                        (stored && (stored.type === 'STICKY' || stored.type === 'SHAPE_WITH_TEXT'))
+                          ? stored : null;
+
+                      if (stickyNode) {
+                        try {
+                          const t = stickyNode.type === 'STICKY'
+                            ? (stickyNode as StickyNode).text
+                            : (stickyNode as ShapeWithTextNode).text;
+                          // Load font — fontName can be figma.mixed (a Symbol) on stickies with mixed styles
+                          const fn = t.fontName;
+                          if (typeof fn !== 'symbol') {
+                            await figma.loadFontAsync(fn);
+                          } else {
+                            await figma.loadFontAsync({ family: 'Inter', style: 'Medium' });
+                            await figma.loadFontAsync({ family: 'Inter', style: 'Regular' });
+                          }
+                          t.characters = `[${acceptValue}] ${t.characters.replace(/^\[\S+\]\s*/, '')}`.trimEnd();
+                        } catch (e) {
+                          console.error('Badge write failed:', e);
+                        }
+                      }
+
+                      for (const k of votes.keys()) votes.delete(k);
+                      setStoryNodeId('');
+                      setStory('');
+                      setPhase('idle');
+                      resolve();
+                    });
+                  })}
                 >
                   <Text fontSize={13} fontWeight="bold" fill={isSuggested ? '#FFFFFF' : '#374151'}>
                     {v} pts
