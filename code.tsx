@@ -212,50 +212,42 @@ function Widget() {
                   stroke={isSuggested ? '#185FA5' : '#D1D5DB'}
                   strokeWidth={1} cornerRadius={8}
                   padding={{ vertical: 7, horizontal: 14 }}
-                  onClick={(): Promise<void> => new Promise(resolve => {
+                  onClick={async (): Promise<void> => {
                     const me = figma.currentUser;
                     const isAllowed = !facilitatorId || (me?.id ?? '') === facilitatorId;
-                    if (!isAllowed) { resolve(); return; }
+                    if (!isAllowed) return;
 
-                    const nodeId = storyNodeId;
-                    const acceptValue = v;
+                    const stored = storyNodeId ? figma.getNodeById(storyNodeId) : null;
+                    const stickyNode =
+                      (stored && (stored.type === 'STICKY' || stored.type === 'SHAPE_WITH_TEXT'))
+                        ? stored : null;
 
-                    // Open hidden UI to get a proper async plugin context for font loading + node editing
-                    figma.showUI(__html__, { visible: false });
-                    figma.ui.on('message', async (msg: any) => {
-                      if (msg.type !== 'ready') return;
-
-                      const stored = nodeId ? figma.getNodeById(nodeId) : null;
-                      const stickyNode =
-                        (stored && (stored.type === 'STICKY' || stored.type === 'SHAPE_WITH_TEXT'))
-                          ? stored : null;
-
-                      if (stickyNode) {
-                        try {
-                          const t = stickyNode.type === 'STICKY'
-                            ? (stickyNode as StickyNode).text
-                            : (stickyNode as ShapeWithTextNode).text;
-                          // Load font — fontName can be figma.mixed (a Symbol) on stickies with mixed styles
-                          const fn = t.fontName;
-                          if (typeof fn !== 'symbol') {
-                            await figma.loadFontAsync(fn);
-                          } else {
-                            await figma.loadFontAsync({ family: 'Inter', style: 'Medium' });
-                            await figma.loadFontAsync({ family: 'Inter', style: 'Regular' });
-                          }
-                          t.characters = `[${acceptValue}] ${t.characters.replace(/^\[\S+\]\s*/, '')}`.trimEnd();
-                        } catch (e) {
-                          console.error('Badge write failed:', e);
+                    if (stickyNode) {
+                      try {
+                        const t = stickyNode.type === 'STICKY'
+                          ? (stickyNode as StickyNode).text
+                          : (stickyNode as ShapeWithTextNode).text;
+                        // fontName can be figma.mixed (Symbol) on stickies with mixed text styles
+                        const fn = t.fontName;
+                        if (typeof fn !== 'symbol') {
+                          await figma.loadFontAsync(fn);
+                        } else {
+                          await figma.loadFontAsync({ family: 'Inter', style: 'Medium' });
+                          await figma.loadFontAsync({ family: 'Inter', style: 'Regular' });
                         }
+                        t.characters = `[${v}] ${t.characters.replace(/^\[\S+\]\s*/, '')}`.trimEnd();
+                      } catch (e) {
+                        figma.notify('Could not write badge: ' + String(e));
                       }
+                    } else {
+                      figma.notify('No sticky linked — select it before starting next session');
+                    }
 
-                      for (const k of votes.keys()) votes.delete(k);
-                      setStoryNodeId('');
-                      setStory('');
-                      setPhase('idle');
-                      resolve();
-                    });
-                  })}
+                    for (const k of votes.keys()) votes.delete(k);
+                    setStoryNodeId('');
+                    setStory('');
+                    setPhase('idle');
+                  }}
                 >
                   <Text fontSize={13} fontWeight="bold" fill={isSuggested ? '#FFFFFF' : '#374151'}>
                     {v} pts
