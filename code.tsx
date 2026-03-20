@@ -39,6 +39,7 @@ function Widget() {
   const [phase, setPhase]                 = useSyncedState<Phase>('phase', 'idle');
   const [story, setStory]                 = useSyncedState<string>('story', '');
   const [facilitatorId, setFacilitatorId] = useSyncedState<string>('facilitatorId', '');
+  const [storyNodeId, setStoryNodeId]     = useSyncedState<string>('storyNodeId', '');
   const votes = useSyncedMap<VoteEntry>('votes');
 
   const allVotes     = [...votes.entries()].map(([id, v]) => ({ id, ...v }));
@@ -59,30 +60,35 @@ function Widget() {
           PLANNING POKER
         </Text>
 
-        {/* Start Session — opens UI where story is set + session starts */}
+        <Text fontSize={9} fill="#B4B2A9">Select a sticky note on the board first</Text>
+
         <AutoLayout
           fill="#185FA5" cornerRadius={8}
           padding={{ vertical: 9, horizontal: 0 }}
           horizontalAlignItems="center" width="fill-parent"
           onClick={(): Promise<void> => new Promise(resolve => {
+            // Capture selected sticky BEFORE the UI opens (selection clears once UI is active)
+            const selected = figma.currentPage.selection
+              .filter(n => n.type === 'STICKY' || n.type === 'SHAPE_WITH_TEXT');
+            const nodeId = selected.length > 0 ? selected[0].id : '';
+
             figma.showUI(__html__, { width: 340, height: 148, title: 'Start Session' });
             figma.ui.postMessage({ type: 'init-start', story });
             figma.ui.on('message', (msg: any) => {
               if (msg.type === 'start-session') {
                 if (msg.story !== undefined) setStory(msg.story);
+                setStoryNodeId(nodeId);
                 for (const k of votes.keys()) votes.delete(k);
-                setFacilitatorId(String(figma.currentUser?.sessionId ?? 0));
+                setFacilitatorId(figma.currentUser?.id ?? '');
                 setPhase('voting');
                 resolve();
               }
-              if (msg.type === 'cancel') {
-                resolve();
-              }
+              if (msg.type === 'cancel') resolve();
             });
           })}
         >
           <Text fill="#FFFFFF" fontSize={13} fontWeight="bold">
-            {story.trim() ? `▶  Start: ${story}` : '▶  Start Session'}
+            {story.trim() ? `▶  ${story}` : '▶  Start Session'}
           </Text>
         </AutoLayout>
       </AutoLayout>
@@ -108,7 +114,6 @@ function Widget() {
 
         <Text fontSize={11} fill="#B4B2A9">Pick your estimate — hidden until reveal</Text>
 
-        {/* Card grid */}
         <AutoLayout direction="horizontal" spacing={5} width="fill-parent">
           {FIBONACCI.map(p => {
             const c = CARD_COLORS[p];
@@ -129,16 +134,14 @@ function Widget() {
           })}
         </AutoLayout>
 
-        {/* Reveal — facilitator only takes effect */}
         <AutoLayout
           fill="#1F2937" cornerRadius={8}
           padding={{ vertical: 9, horizontal: 0 }}
           horizontalAlignItems="center" width="fill-parent"
           onClick={(): Promise<void> => new Promise(resolve => {
             const me = figma.currentUser;
-            if (String(me?.sessionId ?? 0) === facilitatorId) {
-              setPhase('revealed');
-            }
+            const isAllowed = !facilitatorId || (me?.id ?? '') === facilitatorId;
+            if (isAllowed) setPhase('revealed');
             resolve();
           })}
         >
@@ -191,11 +194,15 @@ function Widget() {
         <Text fontSize={11} fill="#B4B2A9">No votes recorded.</Text>
       )}
 
-      {/* Accept estimate buttons */}
       {uniqueValues.length > 0 && (
         <AutoLayout direction="vertical" spacing={6} width="fill-parent">
-          <Text fontSize={10} fill="#888780">Accept final estimate:</Text>
-          <AutoLayout direction="horizontal" spacing={6}>
+          <AutoLayout direction="horizontal" spacing={6} verticalAlignItems="center" width="fill-parent">
+            <Text fontSize={10} fill="#888780" width="fill-parent">Accept final estimate:</Text>
+            <Text fontSize={9} fill={storyNodeId ? '#0F6E56' : '#B4B2A9'}>
+              {storyNodeId ? '📌 linked' : 'select sticky first'}
+            </Text>
+          </AutoLayout>
+          <AutoLayout direction="horizontal" spacing={6} width="fill-parent">
             {uniqueValues.map(v => {
               const isSuggested = v === suggested;
               return (
@@ -205,25 +212,33 @@ function Widget() {
                   stroke={isSuggested ? '#185FA5' : '#D1D5DB'}
                   strokeWidth={1} cornerRadius={8}
                   padding={{ vertical: 7, horizontal: 14 }}
-                  onClick={(): Promise<void> => new Promise(resolve => {
+                  onClick={async (): Promise<void> => {
                     const me = figma.currentUser;
-                    if (String(me?.sessionId ?? 0) !== facilitatorId) {
-                      resolve();
-                      return;
+                    const isAllowed = !facilitatorId || (me?.id ?? '') === facilitatorId;
+                    if (!isAllowed) return;
+
+                    // Find sticky: prefer stored node, fall back to current selection
+                    const storedNode = storyNodeId ? figma.getNodeById(storyNodeId) : null;
+                    const stickyNode =
+                      (storedNode && (storedNode.type === 'STICKY' || storedNode.type === 'SHAPE_WITH_TEXT'))
+                        ? storedNode
+                        : (figma.currentPage.selection.find(
+                            n => n.type === 'STICKY' || n.type === 'SHAPE_WITH_TEXT'
+                          ) ?? null);
+
+                    if (stickyNode) {
+                      const t = stickyNode.type === 'STICKY'
+                        ? (stickyNode as StickyNode).text
+                        : (stickyNode as ShapeWithTextNode).text;
+                      await figma.loadFontAsync(t.fontName as FontName);
+                      t.characters = `[${v}] ${t.characters.replace(/^\[\S+\]\s*/, '')}`.trimEnd();
                     }
-                    figma.currentPage.selection
-                      .filter(n => n.type === 'STICKY' || n.type === 'SHAPE_WITH_TEXT')
-                      .forEach(n => {
-                        const t = n.type === 'STICKY'
-                          ? (n as StickyNode).text
-                          : (n as ShapeWithTextNode).text;
-                        t.characters = `[${v}] ${t.characters.replace(/^\[\S+\]\s*/, '')}`.trimEnd();
-                      });
+
                     for (const k of votes.keys()) votes.delete(k);
+                    setStoryNodeId('');
                     setStory('');
                     setPhase('idle');
-                    resolve();
-                  })}
+                  }}
                 >
                   <Text fontSize={13} fontWeight="bold" fill={isSuggested ? '#FFFFFF' : '#374151'}>
                     {v} pts
@@ -235,18 +250,15 @@ function Widget() {
         </AutoLayout>
       )}
 
-      {/* New Round */}
       <AutoLayout
         fill="#F3F4F6" stroke="#D1D5DB" strokeWidth={1} cornerRadius={8}
         padding={{ vertical: 8, horizontal: 0 }}
         horizontalAlignItems="center" width="fill-parent"
         onClick={(): Promise<void> => new Promise(resolve => {
-          const me = figma.currentUser;
-          if (String(me?.sessionId ?? 0) === facilitatorId) {
-            for (const k of votes.keys()) votes.delete(k);
-            setStory('');
-            setPhase('idle');
-          }
+          for (const k of votes.keys()) votes.delete(k);
+          setStoryNodeId('');
+          setStory('');
+          setPhase('idle');
           resolve();
         })}
       >
