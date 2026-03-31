@@ -268,7 +268,7 @@
 
   function renderCards() {
     const container = document.getElementById("cards");
-    container.innerHTML = "";
+    container.replaceChildren();
     const values = modeValues[currentMode];
     values.forEach((v, i) => {
       const color = colorFor(v, i);
@@ -294,7 +294,7 @@
 
   function renderEditCards() {
     const container = document.getElementById("editCards");
-    container.innerHTML = "";
+    container.replaceChildren();
     const values = modeValues[currentMode];
 
     values.forEach((v, i) => {
@@ -422,8 +422,28 @@
         const total = estimates.reduce((a, b) => a + b, 0);
         const avg = (total / estimates.length).toFixed(1);
         summary.style.display = "flex";
-        summary.innerHTML =
-          `${estimates.length} estimated &nbsp;|&nbsp; Total: <span>${total}</span> &nbsp;|&nbsp; Avg: <span>${avg}</span>`;
+        summary.replaceChildren();
+        const div1 = document.createElement('span');
+        div1.textContent = `${estimates.length} estimated `;
+        const sep1 = document.createElement('span');
+        sep1.innerHTML = '&nbsp;|&nbsp;';
+        const div2 = document.createElement('span');
+        div2.textContent = `Total: `;
+        const span1 = document.createElement('span');
+        span1.textContent = total;
+        const sep2 = document.createElement('span');
+        sep2.innerHTML = '&nbsp;|&nbsp;';
+        const div3 = document.createElement('span');
+        div3.textContent = `Avg: `;
+        const span2 = document.createElement('span');
+        span2.textContent = avg;
+        summary.appendChild(div1);
+        summary.appendChild(sep1);
+        summary.appendChild(div2);
+        summary.appendChild(span1);
+        summary.appendChild(sep2);
+        summary.appendChild(div3);
+        summary.appendChild(span2);
         summaryVisible = true;
       } else {
         summary.style.display = "none";

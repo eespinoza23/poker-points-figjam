@@ -2,7 +2,7 @@
   "compilerOptions": {
     "target": "ES6",
     "lib": ["ES6"],
-    "strict": false,
+    "strict": true,
     "jsx": "react",
     "jsxFactory": "figma.widget.h",
     "moduleResolution": "node",

@@ -1,5 +1,22 @@
+# Build & Dependencies
 node_modules/
 dist/
 *.log
+
+# Environment & Secrets
+.env
+.env.local
+.env.*.local
+secrets/
+*.key
+*.pem
+
+# IDE Settings
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
 .DS_Store
 Thumbs.db
